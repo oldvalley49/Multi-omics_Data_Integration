@@ -14,6 +14,12 @@ However, integration of single-modality data, especially between scRNA-seq and s
 In this project, I benchmark four major computational tools developed for scRNA-seq and scATAC-seq integration(Seurat, LIGER, bindSC, and GLUE) across multiple datasets and conditions to evaluate their ability to align the two modalities. Moreover, I will discuss possible ways in which these methods could be improved. 
 
 ## Project Walkthrough
+
+### Overview of Benchmarking Strategy
+
+In order to benchmark the performance of these integration algorithms, I used publicly available multimodal datasets that simultaneously profiled gene expression and chromatin accessibility. Then, I treat the datasets for two different modalities as originating from two different single-modality experiments and integrate them using the algorithms. Since these were originally sampled from the same cells, we have the ground truth for cell-to-cell correspondence that allows us to measure the accuracy of the alignment. 
+
+To quantitvely measure the alignment accuracy of the two modalities, I used FOSCTTM(fraction of cells closer than the true match) which was first introduced by [Liu et al. 2019](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8496402/). FOSCTTM measures alignment by first calculating the distance matrix beween the data points originating from scRNA-seq and scATAC-seq in the coembedded space. Then, we calculate the proportion of cells of different modality that are closer to the cell than the ground truth-matched cells and take average across all cells measured. 
 ### Data Availability
 ### Pre-processing
 ### Integration
