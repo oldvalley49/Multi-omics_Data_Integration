@@ -81,12 +81,15 @@ atac = atac[subsample_cells]
 ### Integration
 After the preprocessing step, I ran the four algorithms with various conditions as described above. All computing was done through the Joint High Performance Computing Exchange at the Johns Hopkins Bloomberg School of Public Health. Seurat, Liger, and bindSC was ran with only CPUs while scGLUE utilized a GPU. Specific code for each algoirthm is in the `methods` directory. The following are some of the UMAP visualizations of the integrated cell embeddings, colored by the original omics:
 
-PBMC(2000 variable genes, 10531 cells, in row-major order, Seurat, Liger, GLUE, bindSC):
+PBMC(in row-major order, Seurat, Liger, GLUE, bindSC):
 ![PBMC](pbmc.png)
-Pancreas(2000 variable genes, 22304 cells):
+Pancreas(in row-major order, Seurat, Liger, GLUE, bindSC):
 ![Pancreas](pancreas.png)
 
 ### Benchmarking
-However, GLUE takes significantly longer than the other three methods, even with the use of GPU. In the case of working with a large dataset without a GPU available, Seurat would be the best option for integration tasks. 
-### Conclusion and Future Improvements
+As described in [Overview of Benchmarking Strategy](#overview-of-benchmarking-strategy), I evaluated these methods using FOSCTTM to quantify the alignment of the two modalities. Benchmarking results showed that Seurat and GLUE were top performers when the four algorithms integrated the PBMC and Pancreas dataset with 10,531 cells and 22,304 cells, respectively. 
+![PBMC_VAR](pbmc_var.png)
+![Pancreas_VAR](pancreas_var.png)
 
+### Conclusion and Future Improvements
+However, GLUE takes significantly longer than the other three methods, even with the use of GPU. In the case of working with a large dataset without a GPU available, Seurat would be the best option for integration tasks. 
