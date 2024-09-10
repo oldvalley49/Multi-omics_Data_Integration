@@ -82,14 +82,57 @@ atac = atac[subsample_cells]
 After the preprocessing step, I ran the four algorithms with various conditions as described above. All computing was done through the Joint High Performance Computing Exchange at the Johns Hopkins Bloomberg School of Public Health. Seurat, Liger, and bindSC was ran with only CPUs while scGLUE utilized a GPU. Specific code for each algoirthm is in the `methods` directory. The following are some of the UMAP visualizations of the integrated cell embeddings, colored by the original omics:
 
 PBMC(in row-major order, Seurat, Liger, GLUE, bindSC):
-![PBMC](pbmc.png)
+![PBMC](plots/pbmc.png)
 Pancreas(in row-major order, Seurat, Liger, GLUE, bindSC):
-![Pancreas](pancreas.png)
+![Pancreas](plots/pancreas.png)
 
 ### Benchmarking
-As described in [Overview of Benchmarking Strategy](#overview-of-benchmarking-strategy), I evaluated these methods using FOSCTTM to quantify the alignment of the two modalities. Benchmarking results showed that Seurat and GLUE were top performers when the four algorithms integrated the PBMC and Pancreas dataset with 10,531 cells and 22,304 cells, respectively. 
-![PBMC_VAR](pbmc_var.png)
-![Pancreas_VAR](pancreas_var.png)
+As described in [Overview of Benchmarking Strategy](#overview-of-benchmarking-strategy), I evaluated these methods using FOSCTTM to quantify the alignment of the two modalities. Benchmarking results showed that Seurat and GLUE were top performers when the four algorithms integrated the PBMC and Pancreas dataset with 10,531 cells and 22,304 cells, respectively. As expected, for every method, FOSCTTM tends to trend lower(and thus algoirithm performs better) when ran with more variable features. 
+![PBMC_VAR](plots/pbmc_var.png)
+![Pancreas_VAR](plots/pancreas_var.png)
+
+I observed similar results across different sample sizes with both datasets. 
+![PBMC_SUB](plots/pbmc_sub.png)
+![Pancreas_SUB](plots/pancreas_sub.png)
 
 ### Conclusion and Future Improvements
-However, GLUE takes significantly longer than the other three methods, even with the use of GPU. In the case of working with a large dataset without a GPU available, Seurat would be the best option for integration tasks. 
+In conclusion, GLUE and Seurat consistently outperforms other two methods in integration tasks across datasets and sample sizes. However, GLUE takes significantly longer than the other three methods, even with the use of GPU. In the case of working with a large dataset without a GPU available, Seurat would be the best option for integration tasks.
+
+For a more robust benchmark, I plan to implement benchmarks that evaluate the accuracy of downstream analysis performed after integrating the two modalities. For example, a common downstream task for single-cell data is annotating the cells by cell type. Many of these integration algorithm can annotate the unpaired ATAC-seq cells given a comparative scRNA-seq dataset that is already annotated. Give a multi-modal dataset that is already annotated by cell types, we can implement a benchmark that measures how accurately algorithms annotate the unpaired scATAC cells. 
+
+Finally, I would like to consider ways in which these algorithms could be improved. As mentioned above, scRNA-seq and scATAC-seq are not directly comparable because of the difference in their feature spaces. For RNA-seq, they are genes while for ATAC-seq, they are peaks indicating open chromatin region. All of current state-of-art unpaired integration methods resolve this issue by linking each peak to a gene if the peak overlaps with either the gene body or the promoter region and imputing gene expression from ATAC-seq. However, there are two sources of bias in this process; proximity to a gene is not always a indication of peak-gene linkage, and even if they were linked, the relation is often not linear. To demonstrate this, I took bulk RNA-seq and DNase-seq data from the sample sampe(accessions are provided above) and computed correlation between RNA-seq data and the imputed RNA-seq data from DNase-seq data. 
+
+Specifically, I first generated a peak to gene conversion matrix using the `GenomicRanges` package as follows:
+```
+gtf <- import("/Users/wunfs1010/Downloads/jilab_code/integration_filter/genes.gtf")
+genes <- Features(pbmc.rna)
+peaks <- granges(pbmc.atac)
+
+extend <- function(x, upstream=0, downstream=0) {
+  if (any(strand(x) == "*"))
+    warning("'*' ranges were treated as '+'")
+  on_plus <- strand(x) == "+" | strand(x) == "*"
+  new_start <- start(x) - ifelse(on_plus, upstream, downstream)
+  new_end <- end(x) + ifelse(on_plus, downstream, upstream)
+  ranges(x) <- IRanges(new_start, new_end)
+  trim(x)
+}
+
+gtf <- extend(gtf, upstream=3000)
+
+gtf$gene_id <- sapply(strsplit(gtf$gene_id,"\\."), function(x) x[1])
+gtf <- gtf[(elementMetadata(gtf)[["gene_id"]] %in% genes)]
+gtf <- gtf[(elementMetadata(gtf)[["type"]] == "gene")]
+
+hits <- findOverlaps(gtf, peaks)
+hits <- as.matrix(hits)
+colnames(hits) <- c("gene_index", "peak_index")
+rows <- hits[,"gene_index"]
+cols <- hits[,"peak_index"]
+gene.activity.mat <- sparseMatrix(i = rows, j = cols, x = rep(1, length(rows)), dims=c(length(genes), length(peaks)))
+```
+I then multiplied the matrix to the ATAC peak by cell matrix to impute the gene expression data and calculated the pearson correlation for each gene with the RNA-seq data. After calculating the correlation for all genes, I plotted the distribution of these correlations using a histogram, revealing that while many genes have very little correlation between chromatin accessibility and gene expression. 
+
+![corr](plots/corr.png)
+
+Thus, methods that account for the complex and non-linear relationship between chromatin accessibility and gene expression to better impute gene expression could perform better then the existing algorithms. This can be done by taking advantage of the available public multimodal datasets to learn the relationship between regions of the genome and specific genes. 
