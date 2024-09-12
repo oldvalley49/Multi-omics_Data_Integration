@@ -9,7 +9,7 @@ Recent advancements in single-cell sequencing technologies have revolutionized b
 
 Despite the recent advancements in experimental methods that allow for simultaneous measurement of multiple omics modalities at single-cell resolution, most existing datasets only include one modality, presenting challenges for multi-omics integration. A significant issue in the integration of single-modality datasets is that these omics layers have different feature spaces; for scRNA-seq, they are genes while for scATAC-seq, they are peaks corresponding to open-chromatin regions. Therefore they cannot be directly compared. 
 
-However, integration of single-modality data, especially between scRNA-seq and scATAC-seq, allows researchers to identify cell-specific regulatory networks, uncover new cell clusters, and reveal potential biomarkers while taking advantage of the pre-existing single-modality datasets. Thus, growing number of computational tools have been developed to facilitate this process by aligning datasets from two different modalities into a unified latent space. 
+However, integration of single-modality data, especially between scRNA-seq and scATAC-seq, allows researchers to identify cell-specific regulatory networks, uncover new cell clusters, and reveal potential biomarkers while taking advantage of the pre-existing single-modality datasets which cannot be done with single-modality data. Thus, growing number of computational tools have been developed to facilitate this process by aligning datasets from two different modalities into a unified latent space. 
 
 In this project, I benchmark four major computational tools developed for scRNA-seq and scATAC-seq integration(Seurat, LIGER, bindSC, and GLUE) across multiple datasets and conditions to evaluate their ability to align the two modalities. Moreover, I will discuss possible ways in which these methods could be improved. 
 
@@ -31,13 +31,13 @@ where $n_{1, i}$ and $n_{2, i}$ are the number of cells from the other omics tha
 
 The PBMC dataset used in this project can be downloaded directly from the [10X genomics website](https://www.10xgenomics.com/datasets/pbmc-from-a-healthy-donor-granulocytes-removed-through-cell-sorting-10-k-1-standard-1-0-0). The GTF file used to integrate in scGLUE for this data can also be downloaded from the [10X genomics website](https://www.10xgenomics.com/support/software/cell-ranger/latest/tutorials/cr-tutorial-mr)
 
-The Pancreas dataset used in this project can be downloaded from the [ENCODE project website](https://www.encodeproject.org/) with accession: ENCSR033MDU, ENCSR158DQA, ENCSR233SQG, and ENCSR316WAS. The GTF fiile used was downloaded from [GENCODE(GCh38.p12)](https://www.gencodegenes.org/human/release_29.html)
+The Pancreas dataset used in this project can be downloaded from the [ENCODE project website](https://www.encodeproject.org/) with accession: ENCSR033MDU, ENCSR158DQA, ENCSR233SQG, and ENCSR316WAS. The GTF file used was downloaded from [GENCODE(GCh38.p12)](https://www.gencodegenes.org/human/release_29.html)
 
 Finally, the bulk RNA-seq and DNase-seq data analyzed was downloaded from the ENCODE project website as well accessions listed in `accession.txt`
 
 ### Pre-processing
 
-All data was initially stored as a Seurat object and filtered based on QC metrics as shown below
+All data was initially stored as a Seurat object and filtered based on QC metrics as shown below:
 ```
 QC <- function(seurat.obj){
   seurat.obj <- subset(
@@ -131,7 +131,7 @@ rows <- hits[,"gene_index"]
 cols <- hits[,"peak_index"]
 gene.activity.mat <- sparseMatrix(i = rows, j = cols, x = rep(1, length(rows)), dims=c(length(genes), length(peaks)))
 ```
-I then multiplied the matrix to the ATAC peak by cell matrix to impute the gene expression data and calculated the pearson correlation for each gene with the RNA-seq data. After calculating the correlation for all genes, I plotted the distribution of these correlations using a histogram, revealing that while many genes have very little correlation between chromatin accessibility and gene expression. 
+I then multiplied the matrix to the ATAC peak by cell matrix to impute the gene expression data and calculated the pearson correlation for each gene with the RNA-seq data. After calculating the correlation for all genes, I plotted the distribution of these correlations using a histogram, revealing that many genes have very little correlation between chromatin accessibility and gene expression. Because the process of generating a gene activity matrix assumes a linear relationship between chromatin acccessibility and gene expression, we see that the assumption that proximity does not indicate peak-gene linkage, and that pean-gene linkage does not indicate a linear relationship. 
 
 ![corr](plots/corr.png)
 
